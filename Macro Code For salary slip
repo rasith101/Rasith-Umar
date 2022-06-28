@@ -1,0 +1,204 @@
+Public Sub PDFAllSheets()
+
+    r = 2
+    Do
+        If Sheets("Sheet2").Cells(r, 1) <> "" Then
+            Application.StatusBar = "Processing salary slip: " & Sheets("Sheet2").Cells(r, 2)
+            Range("U7") = Sheets("Sheet2").Cells(r, 1)
+            ActiveSheet.Calculate
+            DoEvents
+            
+            PDFActiveSheet
+        End If
+        
+        r = r + 1
+        DoEvents
+    Loop Until Sheets("Sheet2").Cells(r, 1) = ""
+
+    Application.StatusBar = False
+
+End Sub
+
+Public Sub PDFActiveSheet()
+
+    Dim ws As Worksheet
+    Dim strPath As String
+    Dim myFile As Variant
+    Dim strFile As String
+    
+    On Error GoTo errHandler
+    
+    Set ws = ActiveSheet
+    
+    'enter name and select folder for file
+    ' start in current workbook folder
+    strFile = Replace(Replace(ws.Name, " ", ""), ".", "_") _
+                & "_" _
+                & Format(Now(), "yyyymmdd\_hhmm") _
+                & ".pdf"
+    strFile = ThisWorkbook.Path & "\" & strFile
+    
+    'myFile = Application.GetSaveAsFilename _
+        (InitialFileName:=strFile, _
+            FileFilter:="PDF Files (*.pdf), *.pdf", _
+            Title:="Select Folder and FileName to save")
+            
+    myFile = ThisWorkbook.Path & "\" & Range("D7") & ".pdf"
+    
+    'If myFile <> "False" Then
+        ws.ExportAsFixedFormat _
+            Type:=xlTypePDF, _
+            Filename:=myFile, _
+            Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, _
+            IgnorePrintAreas:=False, _
+            OpenAfterPublish:=False
+    
+        'MsgBox "PDF file has been created."
+    'End If
+    
+exitHandler:
+        Exit Sub
+errHandler:
+        MsgBox "Could not create PDF file"
+        Resume exitHandler
+        
+End Sub
+
+Public Sub SendAllEmails()
+
+    r = 2
+    Do
+        If Sheets("Sheet2").Cells(r, 1) <> "" Then
+            Application.StatusBar = "Emailing salary slip: " & Sheets("Sheet2").Cells(r, 2)
+            Range("U7") = Sheets("Sheet2").Cells(r, 1)
+            ActiveSheet.Calculate
+            DoEvents
+            
+            Sendmail
+        End If
+        
+        r = r + 1
+        DoEvents
+    Loop Until Sheets("Sheet2").Cells(r, 1) = ""
+
+     Application.StatusBar = False
+
+End Sub
+
+Public Sub Sendmail()
+    '
+    ' send the individual mail with attached payslip
+    '
+    Dim Outlookapp As Object
+    Dim Myitem As Object
+    Dim cell As Range
+    Dim subj As String
+    Dim emailaddr As String
+    Dim recipient As String
+    Dim bonus As String
+    Dim msg As String
+    Dim mailsubj As String
+    Dim msgcontent As String
+    Dim emailaddy As String
+    Dim emailaddyCC As String
+    '
+    
+    Sheets("Payslip").Select
+    ActiveSheet.ExportAsFixedFormat Type:=xlTypePDF, Filename:= _
+            "C:\Documents and Settings\SYSTEM2\Desktop\" & MonthName((Month(Date)) - 1) & " 2013 Payslip", Quality:=xlQualityStandard _
+            , IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:= _
+            False
+    'email
+    
+    'what you want the email to say msg=msg as much as you want chr13 means hit the return key
+    
+    
+    msg = msg & "Please find the attached salary slip for " & MonthName((Month(Date)) - 1) & " 2013 " & Chr(13) & Chr(13) & Chr(13)
+    
+    Sheets("Mailing list").Visible = True
+    'place the email addresses you want on the sheet user can then replace a name if necessary
+    
+    'Sheets("mailing list").Select
+    
+    emailaddy = ActiveCell.FormulaR1C1 = "=+VLOOKUP(R[-7]C,Mailing list!R2C[-1]:R61C,2,0)"
+    
+    Set Outlookapp = CreateObject("Outlook.Application")
+    subj = "Pay slip for " & MonthName((Month(Date)) - 1) & " 2013 "
+    emailaddress = emailaddy
+    CCRecipients = emailaddyCC
+    
+    
+    
+    
+    'gets outlook going, defines subject, who to send to, subject and message
+    
+    
+    Set Myitem = Outlookapp.createitem(0)
+    With Myitem
+    .To = emailaddress
+    .CC = CCRecipients
+    .Subject = subj
+    .body = msg
+    
+    'need to know where file is saved
+    
+    '.Attachments.Add "C:\Documents and Settings\SYSTEM2\Desktop\" & MonthName((Month(Date)) - 1) & "2013 payslip.pdf"
+    '.Display
+    
+    .Attachments.Add "C:\Documents and Settings\SYSTEM2\Desktop\August 2013 Payslip.pdf"
+    .Display
+    
+    
+    
+    ' ActiveWorkbook.Save
+    'ActiveWindow.Close
+    End With
+
+End Sub
+
+
+
+
+
+
+
+
+
+
+Also, if you want the emails to be sent automatically instead of just displaying them for you in Outlook, where you then have to click the Send button, change this code:
+
+
+    Set Myitem = Outlookapp.createitem(0)
+    With Myitem
+    .To = emailaddress
+    .CC = CCRecipients
+    .Subject = subj
+    .body = msg
+    
+    'need to know where file is saved
+    
+    '.Attachments.Add "C:\Documents and Settings\SYSTEM2\Desktop\" & MonthName((Month(Date)) - 1) & "2013 payslip.pdf"
+    '.Display
+    
+    .Attachments.Add "C:\Documents and Settings\SYSTEM2\Desktop\August 2013 Payslip.pdf"
+    .Display
+
+
+..to this...
+
+
+    Set Myitem = Outlookapp.createitem(0)
+    With Myitem
+    .To = emailaddress
+    .CC = CCRecipients
+    .Subject = subj
+    .body = msg
+    
+    'need to know where file is saved
+    
+    '.Attachments.Add "C:\Documents and Settings\SYSTEM2\Desktop\" & MonthName((Month(Date)) - 1) & "2013 payslip.pdf"
+    '.Display
+    
+    .Attachments.Add "C:\Documents and Settings\SYSTEM2\Desktop\August 2013 Payslip.pdf"
+    .Send
